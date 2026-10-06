@@ -64,7 +64,7 @@ function render(){
      <nav class="adm-nav">
       ${tabs.map(t=>`<button class="${S.v===t[0]?'on':''}" onclick="go('${t[0]}');closeSidebar()"><span class="nav-icon">${t[1]}</span>${t[2]}</button>`).join('')}
      </nav>
-     <div class="sidebar-footer"><div class="donut-deco">🍩</div><p>Sweet moments<br>make a better day!</p></div>
+     <div class="sidebar-footer"><div class="donut-deco">🍩</div><p>Sweet moments<br>make a better day!</p><button class="btn logout-btn" onclick="logout()" style="margin-top:12px;width:100%;justify-content:center">⏏ Logout</button></div>
     </aside>
     <div class="adm-content">${V[S.v]()}</div>
    </div>`;
@@ -161,7 +161,6 @@ dash(){
   <div class="banner-text">
    <h2>Keep Your Donut Shop<br><span>Running Sweetly!</span></h2>
    <p>Track orders, manage donuts, and see your business grow — all in one place.</p>
-   <button class="btn logout-btn" onclick="logout()" style="margin-top:14px">⏏ Logout</button>
   </div>
   <div class="banner-donut">🍩</div>
  </div>
