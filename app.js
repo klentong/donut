@@ -182,12 +182,67 @@ dash(){
   </div>
  </div>`},
 dd(){
- const ds=q('SELECT d.*,c.name cat FROM donuts d JOIN categories c ON c.id=d.category_id WHERE d.name LIKE ? ORDER BY d.id DESC',['%'+S.qs+'%']);
- return `<div class="row"><h1>Donuts</h1><button class="btn sm" onclick="S.edit=null;S.v='df';render()">+ Add Donut</button></div>${search('Search donuts...')}
- <div style="overflow:auto"><table><tr><th></th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th></th></tr>${ds.map(d=>`<tr><td>${d.image&&d.image.startsWith('data:')?`<img src="${d.image}" width="32">`:esc(d.image)}</td><td>${esc(d.name)}</td><td>${esc(d.cat)}</td><td>${money(d.price)}</td>
- <td><input type="number" min="0" style="width:70px" value="${d.stock}" onchange="upd(${d.id},'stock',Math.max(0,parseInt(this.value)||0))"></td>
- <td><select onchange="upd(${d.id},'status',this.value)">${['available','unavailable','archived'].map(s=>`<option ${s==d.status?'selected':''}>${s}</option>`).join('')}</select></td>
- <td><button class="chip" onclick="S.edit=${d.id};S.v='df';render()">✏️</button><button class="chip" onclick="delD(${d.id})">🗑</button></td></tr>`).join('')}</table></div>`},
+ const ds=q('SELECT d.*,c.name cat,c.id cid FROM donuts d JOIN categories c ON c.id=d.category_id WHERE d.name LIKE ? ORDER BY d.id DESC',['%'+S.qs+'%']);
+ const catColors=['#FFF0C2,#D97706','#E0F2FE,#0369A1','#F3E8FF,#7C3AED','#FCE7F3,#BE185D','#DCFCE7,#15803D','#FEE2E2,#B91C1C','#E0E7FF,#4338CA'];
+ const catPill=(cat,idx)=>{const[bg,fg]=catColors[idx%catColors.length].split(',');return `<span style="background:${bg};color:${fg};padding:4px 12px;border-radius:99px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:5px;white-space:nowrap"><span style="font-size:13px">🧁</span>${esc(cat)}</span>`};
+ const statusDot=s=>s==='available'?'#22c55e':s==='unavailable'?'#f59e0b':'#94a3b8';
+ const statusLabel=s=>s==='available'?'Available':s==='unavailable'?'Unavailable':'Archived';
+ const statusBg=s=>s==='available'?'#f0fdf4':s==='unavailable'?'#fffbeb':'#f8fafc';
+ const donutAvatar=d=>{if(d.image&&d.image.startsWith('data:image/'))return `<img src="${d.image}" style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid #f1f5f9">`;return `<div style="width:42px;height:42px;border-radius:50%;background:#FFF0F5;border:2px solid #f1f5f9;display:flex;align-items:center;justify-content:center;font-size:24px">${esc(d.image||'🍩')}</div>`};
+ return `
+ <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap">
+  <div style="display:flex;align-items:center;gap:14px">
+   <div style="width:52px;height:52px;background:#FFF0F5;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:28px;border:1.5px solid #fce7f3">🍩</div>
+   <div><h1 style="font-size:24px;font-weight:800;margin:0">Donuts</h1><p style="margin:2px 0 0;font-size:13px;color:var(--muted)">Manage your donut menu, prices and stock.</p></div>
+  </div>
+  <button class="btn sm" style="background:var(--blue);border-radius:12px;padding:11px 20px;font-size:14px;display:flex;align-items:center;gap:6px" onclick="S.edit=null;S.v='df';render()">＋ Add Donut</button>
+ </div>
+ <div style="background:#fff;border-radius:14px;padding:10px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px #0001;border:1px solid #e2e8f0">
+  <span style="font-size:18px;color:#94a3b8">🔍</span>
+  <input placeholder="Search donuts..." value="${esc(S.qs)}" onchange="S.qs=this.value;render()" style="border:0;padding:4px 0;margin:0;font-size:15px;background:transparent;outline:none;width:100%">
+ </div>
+ <div style="background:#fff;border-radius:16px;box-shadow:0 2px 12px #0001;overflow:hidden">
+  <div style="overflow-x:auto">
+  <table style="border-radius:0">
+   <thead><tr style="background:#f8fafc">
+    <th style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:14px 16px;width:52px"></th>
+    <th style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:14px 16px;min-width:140px">NAME</th>
+    <th style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:14px 16px;min-width:130px">CATEGORY</th>
+    <th style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:14px 16px;min-width:90px">PRICE</th>
+    <th style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:14px 16px;min-width:90px">STOCK</th>
+    <th style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:14px 16px;min-width:160px">STATUS</th>
+    <th style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:14px 16px;min-width:100px">ACTIONS</th>
+   </tr></thead>
+   <tbody>${ds.length?ds.map((d,idx)=>`
+    <tr style="border-bottom:1px solid #f1f5f9;transition:background .15s" onmouseenter="this.style.background='#f8fafc'" onmouseleave="this.style.background=''">
+     <td style="padding:12px 16px">${donutAvatar(d)}</td>
+     <td style="padding:12px 16px;font-weight:600;font-size:14px;color:var(--text)">${esc(d.name)}</td>
+     <td style="padding:12px 16px">${catPill(d.cat,idx)}</td>
+     <td style="padding:12px 16px;font-weight:700;font-size:14px;color:var(--text)">${money(d.price)}</td>
+     <td style="padding:12px 16px">
+      <input type="number" min="0" value="${d.stock}" onchange="upd(${d.id},'stock',Math.max(0,parseInt(this.value)||0))"
+       style="width:72px;padding:7px 10px;margin:0;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;font-weight:600;text-align:center">
+     </td>
+     <td style="padding:12px 16px">
+      <div style="display:inline-flex;align-items:center;gap:6px;background:${statusBg(d.status)};border-radius:10px;padding:6px 12px;cursor:pointer" onclick="this.querySelector('select').click()">
+       <span style="width:8px;height:8px;border-radius:50%;background:${statusDot(d.status)};display:inline-block;flex-shrink:0"></span>
+       <span style="font-size:13px;font-weight:600;color:${statusDot(d.status)}">${statusLabel(d.status)}</span>
+       <select onchange="upd(${d.id},'status',this.value)" style="border:0;background:transparent;font-size:12px;padding:0;margin:0;width:16px;cursor:pointer;color:#94a3b8;outline:none">
+        ${['available','unavailable','archived'].map(s=>`<option value="${s}" ${s==d.status?'selected':''}>${s}</option>`).join('')}
+       </select>
+      </div>
+     </td>
+     <td style="padding:12px 16px">
+      <div style="display:flex;gap:8px">
+       <button onclick="S.edit=${d.id};S.v='df';render()" style="width:36px;height:36px;border-radius:10px;border:1.5px solid #e2e8f0;background:#f8fafc;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center" title="Edit">✏️</button>
+       <button onclick="delD(${d.id})" style="width:36px;height:36px;border-radius:10px;border:1.5px solid #fee2e2;background:#fff5f5;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center" title="Delete">🗑️</button>
+      </div>
+     </td>
+    </tr>`).join(''):`<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">🍩<br>No donuts found</td></tr>`}
+   </tbody>
+  </table>
+  </div>
+ </div>`},
 df(){
  const d=S.edit?q('SELECT * FROM donuts WHERE id=?',[S.edit])[0]:{name:'',description:'',price:'',stock:'',status:'available',category_id:1,image:'🍩'};S.img=d.image;
  return `<h1>${S.edit?'Edit':'Add New'} Donut</h1><div class="box"><div class="img" id="pv">${pic(d.image)}</div><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onchange="pick(this)"><small>Or emoji:</small><input value="${d.image&&d.image.startsWith('data:')?'':esc(d.image)}" maxlength="4" oninput="S.img=this.value||'🍩';$('#pv').textContent=S.img">
