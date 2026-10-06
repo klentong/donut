@@ -1,4 +1,171 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Donut Shop</title><link rel="stylesheet" href="style.css"></head>
-<body><div id="app"></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
-<script src="app.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Donut Shop</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- ===================================================
+       LOGIN TEMPLATE (Edit login layout & texts here!)
+       =================================================== -->
+  <template id="tpl-login">
+    <div class="auth-bg">
+      <div class="auth-card login-card">
+        <div class="auth-left">
+          <div class="auth-left-content">
+            <div class="auth-donut-icon">🍩</div>
+            <h1 class="auth-brand-title">Sweet Donuts</h1>
+            <p class="auth-brand-sub">Freshly baked. Always a good idea.</p>
+            <div class="auth-big-donut">🍩</div>
+            <div class="auth-sprinkles">
+              <span style="top:18%;left:12%;transform:rotate(30deg)">🍬</span>
+              <span style="top:22%;right:14%;transform:rotate(-20deg)">🍭</span>
+              <span style="bottom:28%;left:8%;transform:rotate(60deg)">🍬</span>
+              <span style="bottom:22%;right:10%;transform:rotate(-45deg)">🍭</span>
+            </div>
+          </div>
+        </div>
+        <div class="auth-right">
+          <h2 class="auth-title">Welcome back!</h2>
+          <p class="auth-sub">Log in to your Sweet Donuts account<br>and keep the orders going!</p>
+          <div class="auth-field">
+            <span class="auth-icon">✉️</span>
+            <input id="e" type="email" placeholder="Email" onkeydown="if(event.key==='Enter')login()">
+          </div>
+          <div class="auth-field">
+            <span class="auth-icon">🔒</span>
+            <input id="p" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')login()">
+            <button class="auth-eye" onclick="togglePw()" id="eyeBtn" title="Show/hide">🙈</button>
+          </div>
+          <button class="auth-btn-main" onclick="login()">Login &nbsp;→</button>
+          <div class="auth-or"><span>or</span></div>
+          <button class="auth-btn-outline" onclick="authView(true)">👤+ &nbsp;Register</button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- ===================================================
+       REGISTER TEMPLATE (Edit register fields & texts here!)
+       =================================================== -->
+  <template id="tpl-register">
+    <div class="auth-bg">
+      <div class="auth-card register-card">
+        <div class="auth-brand-mini">
+          <span style="font-size:28px">🍩</span>
+          <span class="auth-brand-name">Sweet Donuts</span>
+        </div>
+        <h2 class="auth-title">Create Account</h2>
+        <p class="auth-sub">Join us and start ordering fresh donuts!</p>
+        <div class="auth-field"><span class="auth-icon">👤</span><input id="n" placeholder="Full name"></div>
+        <div class="auth-field"><span class="auth-icon">✉️</span><input id="e" type="email" placeholder="Email"></div>
+        <div class="auth-field"><span class="auth-icon">🔒</span><input id="p" type="password" placeholder="Password"></div>
+        <div class="auth-field"><span class="auth-icon">🔒</span><input id="p2" type="password" placeholder="Confirm password"></div>
+        <div class="auth-field"><span class="auth-icon">📱</span><input id="ph" placeholder="Phone"></div>
+        <div class="auth-field"><span class="auth-icon">📍</span><input id="ad" placeholder="Address"></div>
+        <button class="auth-btn-main" onclick="register()">Register →</button>
+        <div class="auth-or"><span>or</span></div>
+        <button class="auth-btn-outline" onclick="authView(false)">← Back to Login</button>
+      </div>
+    </div>
+  </template>
+
+  <!-- ===================================================
+       ADMIN SHELL TEMPLATE (Edit sidebar & layout here!)
+       =================================================== -->
+  <template id="tpl-admin-shell">
+    <button class="adm-menu-btn" onclick="toggleSidebar()">☰</button>
+    <div class="adm-overlay" id="admOverlay" onclick="closeSidebar()"></div>
+    <div class="adm-shell">
+      <aside class="adm-sidebar" id="admSidebar">
+        <div class="brand">
+          <span class="brand-icon">🍩</span>
+          <span class="brand-name">Donuts</span>
+        </div>
+        <nav class="adm-nav" id="admNavSlots"></nav>
+        <div class="sidebar-footer">
+          <div class="donut-deco">🍩</div>
+          <p>Sweet moments<br>make a better day!</p>
+          <button class="btn logout-btn" onclick="logout()" style="margin-top:12px;width:100%;justify-content:center">⏏ Logout</button>
+        </div>
+      </aside>
+      <div class="adm-content" id="admContentSlot"></div>
+    </div>
+  </template>
+
+  <!-- ===================================================
+       DASHBOARD TEMPLATE (Edit dashboard headers & cards here!)
+       =================================================== -->
+  <template id="tpl-dashboard">
+    <div class="dash-header">
+      <h1>Dashboard</h1>
+      <p>Here's a quick look at your donut shop today.</p>
+    </div>
+    <div class="stat-cards">
+      <div class="stat-card sc-blue">
+        <div class="sc-icon">🛒</div>
+        <div class="sc-info">
+          <div class="sc-label">Total Orders</div>
+          <div class="sc-value" data-bind="totalOrders">0</div>
+        </div>
+        <span class="sc-trend">📈</span>
+      </div>
+      <div class="stat-card sc-green">
+        <div class="sc-icon">⏳</div>
+        <div class="sc-info">
+          <div class="sc-label">Pending</div>
+          <div class="sc-value" data-bind="pending">0</div>
+        </div>
+        <span class="sc-trend">🕐</span>
+      </div>
+      <div class="stat-card sc-purple">
+        <div class="sc-icon">🍩</div>
+        <div class="sc-info">
+          <div class="sc-label">Total Donuts</div>
+          <div class="sc-value" data-bind="totalDonuts">0</div>
+        </div>
+        <span class="sc-trend">🍩</span>
+      </div>
+      <div class="stat-card sc-orange">
+        <div class="sc-icon">📊</div>
+        <div class="sc-info">
+          <div class="sc-label">Total Sales</div>
+          <div class="sc-value" data-bind="totalSales">₱0.00</div>
+        </div>
+        <span class="sc-trend">📊</span>
+      </div>
+    </div>
+    <div class="dash-banner">
+      <div class="banner-text">
+        <h2>Keep Your Donut Shop<br><span>Running Sweetly!</span></h2>
+        <p>Track orders, manage donuts, and see your business grow — all in one place.</p>
+      </div>
+      <div class="banner-donut">🍩</div>
+    </div>
+    <div class="dash-bottom">
+      <div class="dash-panel">
+        <div class="dash-panel-header">
+          <h3>📈 Sales Overview</h3>
+          <span style="font-size:13px;color:var(--muted)">This Week</span>
+        </div>
+        <canvas id="salesChart"></canvas>
+      </div>
+      <div class="dash-panel">
+        <div class="dash-panel-header">
+          <h3>📋 Recent Orders</h3>
+          <a href="#" onclick="go('ao');return false">View All ›</a>
+        </div>
+        <div id="recentOrdersSlot"></div>
+      </div>
+    </div>
+  </template>
+
+  <!-- Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

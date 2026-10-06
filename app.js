@@ -26,59 +26,17 @@ async function start(){
   q('SELECT 1 FROM users LIMIT 1');authView()
  }catch(e){console.error(e);app.innerHTML=`<div class="splash"><div class="logo">🍩</div><h1>Could not start</h1><p>${esc(e.message||'Check that database.sql is available and reload.')}</p><button class="btn" onclick="start()">Retry</button></div>`}
 }
+function getTemplate(id){const t=document.getElementById(id);return t?t.innerHTML:null}
 function authView(reg){
- if(reg){
-  app.innerHTML=`<div class="auth-bg">
-   <div class="auth-card register-card">
-    <div class="auth-brand-mini"><span style="font-size:28px">🍩</span><span class="auth-brand-name">Sweet Donuts</span></div>
-    <h2 class="auth-title">Create Account</h2>
-    <p class="auth-sub">Join us and start ordering fresh donuts!</p>
-    <div class="auth-field"><span class="auth-icon">👤</span><input id="n" placeholder="Full name"></div>
-    <div class="auth-field"><span class="auth-icon">✉️</span><input id="e" type="email" placeholder="Email"></div>
-    <div class="auth-field"><span class="auth-icon">🔒</span><input id="p" type="password" placeholder="Password"></div>
-    <div class="auth-field"><span class="auth-icon">🔒</span><input id="p2" type="password" placeholder="Confirm password"></div>
-    <div class="auth-field"><span class="auth-icon">📱</span><input id="ph" placeholder="Phone"></div>
-    <div class="auth-field"><span class="auth-icon">📍</span><input id="ad" placeholder="Address"></div>
-    <button class="auth-btn-main" onclick="register()">Register →</button>
-    <div class="auth-or"><span>or</span></div>
-    <button class="auth-btn-outline" onclick="authView(false)">← Back to Login</button>
-   </div>
-  </div>`;
- } else {
-  app.innerHTML=`<div class="auth-bg">
-   <div class="auth-card login-card">
-    <div class="auth-left">
-     <div class="auth-left-content">
-      <div class="auth-donut-icon">🍩</div>
-      <h1 class="auth-brand-title">Sweet Donuts</h1>
-      <p class="auth-brand-sub">Freshly baked. Always a good idea.</p>
-      <div class="auth-big-donut">🍩</div>
-      <div class="auth-sprinkles">
-       <span style="top:18%;left:12%;transform:rotate(30deg)">🍬</span>
-       <span style="top:22%;right:14%;transform:rotate(-20deg)">🍭</span>
-       <span style="bottom:28%;left:8%;transform:rotate(60deg)">🍬</span>
-       <span style="bottom:22%;right:10%;transform:rotate(-45deg)">🍭</span>
-      </div>
-     </div>
-    </div>
-    <div class="auth-right">
-     <h2 class="auth-title">Welcome back!</h2>
-     <p class="auth-sub">Log in to your Sweet Donuts account<br>and keep the orders going!</p>
-     <div class="auth-field">
-      <span class="auth-icon">✉️</span>
-      <input id="e" type="email" placeholder="Email" onkeydown="if(event.key==='Enter')login()">
-     </div>
-     <div class="auth-field">
-      <span class="auth-icon">🔒</span>
-      <input id="p" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')login()">
-      <button class="auth-eye" onclick="togglePw()" id="eyeBtn" title="Show/hide">🙈</button>
-     </div>
-     <button class="auth-btn-main" onclick="login()">Login &nbsp;→</button>
-     <div class="auth-or"><span>or</span></div>
-     <button class="auth-btn-outline" onclick="authView(true)">👤+ &nbsp;Register</button>
-    </div>
-   </div>
-  </div>`;
+ const tplId=reg?'tpl-register':'tpl-login';
+ const html=getTemplate(tplId);
+ if(html){app.innerHTML=html}
+ else{
+  if(reg){
+   app.innerHTML=`<div class="auth-bg"><div class="auth-card register-card"><div class="auth-brand-mini"><span style="font-size:28px">🍩</span><span class="auth-brand-name">Sweet Donuts</span></div><h2 class="auth-title">Create Account</h2><p class="auth-sub">Join us and start ordering fresh donuts!</p><div class="auth-field"><span class="auth-icon">👤</span><input id="n" placeholder="Full name"></div><div class="auth-field"><span class="auth-icon">✉️</span><input id="e" type="email" placeholder="Email"></div><div class="auth-field"><span class="auth-icon">🔒</span><input id="p" type="password" placeholder="Password"></div><div class="auth-field"><span class="auth-icon">🔒</span><input id="p2" type="password" placeholder="Confirm password"></div><div class="auth-field"><span class="auth-icon">📱</span><input id="ph" placeholder="Phone"></div><div class="auth-field"><span class="auth-icon">📍</span><input id="ad" placeholder="Address"></div><button class="auth-btn-main" onclick="register()">Register →</button><div class="auth-or"><span>or</span></div><button class="auth-btn-outline" onclick="authView(false)">← Back to Login</button></div></div>`;
+  }else{
+   app.innerHTML=`<div class="auth-bg"><div class="auth-card login-card"><div class="auth-left"><div class="auth-left-content"><div class="auth-donut-icon">🍩</div><h1 class="auth-brand-title">Sweet Donuts</h1><p class="auth-brand-sub">Freshly baked. Always a good idea.</p><div class="auth-big-donut">🍩</div></div></div><div class="auth-right"><h2 class="auth-title">Welcome back!</h2><p class="auth-sub">Log in to your Sweet Donuts account<br>and keep the orders going!</p><div class="auth-field"><span class="auth-icon">✉️</span><input id="e" type="email" placeholder="Email"></div><div class="auth-field"><span class="auth-icon">🔒</span><input id="p" type="password" placeholder="Password"><button class="auth-eye" onclick="togglePw()" id="eyeBtn">🙈</button></div><button class="auth-btn-main" onclick="login()">Login &nbsp;→</button><div class="auth-or"><span>or</span></div><button class="auth-btn-outline" onclick="authView(true)">👤+ &nbsp;Register</button></div></div></div>`;
+  }
  }
 }
 function togglePw(){const p=$('#p'),b=$('#eyeBtn');if(!p)return;if(p.type==='password'){p.type='text';b.textContent='👁️'}else{p.type='password';b.textContent='🙈'}}
@@ -106,19 +64,17 @@ function render(){
  if(a&&!ADMIN.includes(S.v))S.v='dash';
  if(a){
   const tabs=[['dash','🏠','Dashboard'],['dd','🍩','Donuts'],['ao','📦','Orders'],['au','👥','Users']];
-  app.innerHTML=`
-   <button class="adm-menu-btn" onclick="toggleSidebar()">☰</button>
-   <div class="adm-overlay" id="admOverlay" onclick="closeSidebar()"></div>
-   <div class="adm-shell">
-    <aside class="adm-sidebar" id="admSidebar">
-     <div class="brand"><span class="brand-icon">🍩</span><span class="brand-name">Donuts</span></div>
-     <nav class="adm-nav">
-      ${tabs.map(t=>`<button class="${S.v===t[0]?'on':''}" onclick="go('${t[0]}');closeSidebar()"><span class="nav-icon">${t[1]}</span>${t[2]}</button>`).join('')}
-     </nav>
-     <div class="sidebar-footer"><div class="donut-deco">🍩</div><p>Sweet moments<br>make a better day!</p><button class="btn logout-btn" onclick="logout()" style="margin-top:12px;width:100%;justify-content:center">⏏ Logout</button></div>
-    </aside>
-    <div class="adm-content">${V[S.v]()}</div>
-   </div>`;
+  const navHtml=tabs.map(t=>`<button class="${S.v===t[0]?'on':''}" onclick="go('${t[0]}');closeSidebar()"><span class="nav-icon">${t[1]}</span>${t[2]}</button>`).join('');
+  const shellTpl=getTemplate('tpl-admin-shell');
+  if(shellTpl){
+   const div=document.createElement('div');
+   div.innerHTML=shellTpl;
+   const navSlot=div.querySelector('#admNavSlots');if(navSlot)navSlot.innerHTML=navHtml;
+   const contentSlot=div.querySelector('#admContentSlot');if(contentSlot)contentSlot.innerHTML=V[S.v]();
+   app.innerHTML=div.innerHTML;
+  }else{
+   app.innerHTML=`<button class="adm-menu-btn" onclick="toggleSidebar()">☰</button><div class="adm-overlay" id="admOverlay" onclick="closeSidebar()"></div><div class="adm-shell"><aside class="adm-sidebar" id="admSidebar"><div class="brand"><span class="brand-icon">🍩</span><span class="brand-name">Donuts</span></div><nav class="adm-nav">${navHtml}</nav><div class="sidebar-footer"><div class="donut-deco">🍩</div><p>Sweet moments<br>make a better day!</p><button class="btn logout-btn" onclick="logout()" style="margin-top:12px;width:100%;justify-content:center">⏏ Logout</button></div></aside><div class="adm-content">${V[S.v]()}</div></div>`;
+  }
   if(S.v==='dash')setTimeout(initChart,50);
  } else {
   const tabs=[['menu','🏠','Menu'],['cart','🛒','Cart'+(cart.length?` (${cart.length})`:'')],['orders','🧾','Orders'],['me','👤','Profile']];
@@ -181,7 +137,19 @@ dash(){
    <span class="ro-status ${statusClass(o.order_status)}">${esc(o.order_status)}</span>
    <span class="ro-price">${money(o.total_amount)}</span>
   </div>`;}).join(''):`<div class="empty" style="padding:20px">No orders yet</div>`;
- return `
+  const dashTpl=getTemplate('tpl-dashboard');
+  if(dashTpl){
+   const div=document.createElement('div');
+   div.innerHTML=dashTpl;
+   const bind=(key,val)=>{const el=div.querySelector(`[data-bind="${key}"]`);if(el)el.textContent=val;};
+   bind('totalOrders',totalOrders);
+   bind('pending',pending);
+   bind('totalDonuts',totalDonuts);
+   bind('totalSales',totalSales);
+   const roSlot=div.querySelector('#recentOrdersSlot');if(roSlot)roSlot.innerHTML=roRows;
+   return div.innerHTML;
+  }
+  return `
  <div class="dash-header">
   <h1>Dashboard</h1>
   <p>Here's a quick look at your donut shop today.</p>
