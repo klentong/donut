@@ -164,6 +164,83 @@
     </div>
   </template>
 
+  <!-- ===================================================
+       ORDERS TEMPLATE (Edit Orders layout & text here!)
+       =================================================== -->
+  <template id="tpl-orders">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="width:52px;height:52px;background:#FFF0F5;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:28px;border:1.5px solid #fce7f3">📦</div>
+        <div>
+          <h1 style="font-size:24px;font-weight:800;margin:0">Orders</h1>
+          <p style="margin:2px 0 0;font-size:13px;color:var(--muted)">View and manage all customer orders.</p>
+        </div>
+      </div>
+      <div style="background:#fff;border-radius:14px;padding:8px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px #0001;border:1px solid #e2e8f0;width:300px;max-width:100%">
+        <span style="font-size:18px;color:#94a3b8">🔍</span>
+        <input id="ordersSearchInput" placeholder="Search order # or customer..." style="border:0;padding:4px 0;margin:0;font-size:14px;background:transparent;outline:none;width:100%">
+      </div>
+    </div>
+
+    <!-- Top 6 Status Metric Cards -->
+    <div class="orders-stat-grid">
+      <div class="stat-card sc-pink">
+        <div class="sc-icon">🍩</div>
+        <div class="sc-info"><div class="sc-label">Total Orders</div><div class="sc-value" data-bind="countTotal">0</div></div>
+        <span class="sc-trend">📈</span>
+      </div>
+      <div class="stat-card sc-yellow">
+        <div class="sc-icon">🕒</div>
+        <div class="sc-info"><div class="sc-label">Pending</div><div class="sc-value" data-bind="countPending">0</div></div>
+        <span class="sc-trend">🕒</span>
+      </div>
+      <div class="stat-card sc-green">
+        <div class="sc-icon">🟢</div>
+        <div class="sc-info"><div class="sc-label">Confirmed</div><div class="sc-value" data-bind="countConfirmed">0</div></div>
+        <span class="sc-trend">✓</span>
+      </div>
+      <div class="stat-card sc-purple">
+        <div class="sc-icon">📦</div>
+        <div class="sc-info"><div class="sc-label">Preparing</div><div class="sc-value" data-bind="countPreparing">0</div></div>
+        <span class="sc-trend">⚙️</span>
+      </div>
+      <div class="stat-card sc-blue">
+        <div class="sc-icon">🚚</div>
+        <div class="sc-info"><div class="sc-label">Ready for Delivery</div><div class="sc-value" data-bind="countReady">0</div></div>
+        <span class="sc-trend">🚚</span>
+      </div>
+      <div class="stat-card sc-green">
+        <div class="sc-icon">🏁</div>
+        <div class="sc-info"><div class="sc-label">Completed</div><div class="sc-value" data-bind="countCompleted">0</div></div>
+        <span class="sc-trend">🏁</span>
+      </div>
+    </div>
+
+    <!-- Orders Table Card -->
+    <div style="background:#fff;border-radius:16px;box-shadow:0 2px 12px #0001;overflow:hidden">
+      <div style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f1f5f9">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:20px;color:var(--pink)">📑</span>
+          <h3 style="font-size:16px;font-weight:700;margin:0">Orders</h3>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <select id="ordersStatusFilter" style="width:auto;margin:0;padding:7px 14px;border-radius:10px;font-size:13px;border:1px solid #e2e8f0;background:#fff;color:var(--text);font-weight:600">
+            <option value="All">All Status</option>
+            <option value="Pending">Pending</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="Preparing">Preparing</option>
+            <option value="Ready for Delivery">Ready for Delivery</option>
+            <option value="Completed">Completed</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <div id="ordersTableSlot"></div>
+      </div>
+    </div>
+  </template>
+
   <!-- Scripts -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
   <script src="app.js"></script>

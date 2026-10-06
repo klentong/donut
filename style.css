@@ -246,6 +246,17 @@ small{color:var(--muted)}
 .sc-green .sc-icon{background:var(--green-light);color:var(--green)}
 .sc-purple .sc-icon{background:var(--purple-light);color:var(--purple)}
 .sc-orange .sc-icon{background:var(--orange-light);color:var(--orange)}
+.sc-pink .sc-icon{background:#FCE7F3;color:#EC4899}
+.sc-yellow .sc-icon{background:#FEF9C3;color:#CA8A04}
+
+.orders-stat-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:1200px){
+  .orders-stat-grid{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:640px){
+  .orders-stat-grid{grid-template-columns:repeat(2,1fr)}
+}
+
 
 /* --- Banner --- */
 .dash-banner{

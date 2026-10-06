@@ -269,8 +269,145 @@ df(){
  <select id="dt">${['available','unavailable','archived'].map(s=>`<option ${s==d.status?'selected':''}>${s}</option>`).join('')}</select>
  <div class="row"><button class="btn ghost" onclick="go('dd')">Cancel</button><button class="btn" onclick="saveD()">Save Donut</button></div></div>`},
 ao(){
- const k=S.qs.toLowerCase(),os=q('SELECT o.*,u.name cname,u.email FROM orders o JOIN users u ON u.id=o.user_id ORDER BY o.id DESC').filter(o=>!k||('#'+(1000+o.id)).includes(k)||o.cname.toLowerCase().includes(k));
- return `<h1>Orders</h1>${search('Search order # or customer...')}${os.length?os.map(o=>ordCard(o,1)).join(''):empty('No orders')}`},
+ if(!S.statusFilter)S.statusFilter='All';
+ const allOs=q('SELECT o.*,u.name cname,u.email FROM orders o JOIN users u ON u.id=o.user_id ORDER BY o.id DESC');
+ const countTotal=allOs.length;
+ const countPending=allOs.filter(o=>o.order_status==='Pending').length;
+ const countConfirmed=allOs.filter(o=>o.order_status==='Confirmed').length;
+ const countPreparing=allOs.filter(o=>o.order_status==='Preparing').length;
+ const countReady=allOs.filter(o=>o.order_status==='Ready for Delivery').length;
+ const countCompleted=allOs.filter(o=>o.order_status==='Completed').length;
+
+ const k=S.qs.toLowerCase();
+ const os=allOs.filter(o=>{
+  const matchK=!k||('#'+(1000+o.id)).includes(k)||o.cname.toLowerCase().includes(k)||(o.contact_number||'').includes(k);
+  const matchS=S.statusFilter==='All'||o.order_status===S.statusFilter;
+  return matchK&&matchS;
+ });
+
+ const statusStyle=s=>{
+  if(s==='Pending')return{bg:'#FEF9C3',fg:'#A16207',ico:'🕒'};
+  if(s==='Confirmed')return{bg:'#DCFCE7',fg:'#15803D',ico:'🟢'};
+  if(s==='Preparing')return{bg:'#F3E8FF',fg:'#7C3AED',ico:'📦'};
+  if(s==='Ready for Delivery')return{bg:'#E0F2FE',fg:'#0369A1',ico:'🚚'};
+  if(s==='Completed')return{bg:'#DCFCE7',fg:'#166534',ico:'🏁'};
+  return{bg:'#FEE2E2',fg:'#B91C1C',ico:'❌'};
+ };
+
+ const rowsHtml=os.length?`
+ <table style="border-radius:0">
+  <thead><tr style="background:#f8fafc">
+   <th style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:14px 16px;width:90px">#</th>
+   <th style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:14px 16px;min-width:140px">CUSTOMER</th>
+   <th style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:14px 16px;min-width:200px">ITEMS</th>
+   <th style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:14px 16px;min-width:100px">TOTAL</th>
+   <th style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:14px 16px;min-width:160px">STATUS</th>
+   <th style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:14px 16px;min-width:140px">ORDER DATE</th>
+   <th style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:14px 16px;min-width:100px">ACTIONS</th>
+  </tr></thead>
+  <tbody>
+   ${os.map(o=>{
+    const st=statusStyle(o.order_status);
+    const items=q('SELECT oi.*,d.name dname,d.image dimg FROM order_items oi JOIN donuts d ON d.id=oi.donut_id WHERE order_id=?',[o.id]);
+    const first=items[0]||{dname:'Donut',quantity:1,price:0,dimg:'🍩'};
+    const extraCount=items.length>1?` (+${items.length-1} more)`:'';
+    const thumb=first.dimg&&first.dimg.startsWith('data:image/')?`<img src="${first.dimg}" style="width:40px;height:40px;border-radius:10px;object-fit:cover">`:`<div style="width:40px;height:40px;border-radius:10px;background:#FFF0F5;display:flex;align-items:center;justify-content:center;font-size:22px">${esc(first.dimg||'🍩')}</div>`;
+    const dtParts=(o.created_at||'').split(' ');
+    const dateStr=dtParts[0]||'';
+    const timeStr=dtParts[1]||'';
+
+    return `
+    <tr style="border-bottom:1px solid #f1f5f9;transition:background .15s" onmouseenter="this.style.background='#f8fafc'" onmouseleave="this.style.background=''">
+     <td style="padding:14px 16px">
+      <div style="font-weight:800;font-size:14px;color:var(--text)">#${1000+o.id}</div>
+      <span style="background:${st.bg};color:${st.fg};padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;display:inline-block;margin-top:4px">${esc(o.order_status)}</span>
+     </td>
+     <td style="padding:14px 16px">
+      <div style="display:flex;align-items:center;gap:6px;font-weight:600;font-size:14px;color:var(--text)"><span style="color:#94a3b8">👤</span>${esc(o.cname)}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px"><span style="color:#94a3b8">📞</span>${esc(o.contact_number||'N/A')}</div>
+     </td>
+     <td style="padding:14px 16px">
+      <div style="display:flex;align-items:center;gap:10px">
+       ${thumb}
+       <div>
+        <div style="font-weight:600;font-size:13px;color:var(--text)">${first.quantity} × ${esc(first.dname)}${extraCount}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:1px">${money(first.price)}</div>
+       </div>
+      </div>
+     </td>
+     <td style="padding:14px 16px;font-weight:800;font-size:15px;color:var(--text)">${money(o.total_amount)}</td>
+     <td style="padding:14px 16px">
+      <div style="display:inline-flex;align-items:center;gap:6px;background:${st.bg};border-radius:10px;padding:6px 12px;cursor:pointer" onclick="this.querySelector('select').click()">
+       <span style="font-size:12px">${st.ico}</span>
+       <span style="font-size:13px;font-weight:600;color:${st.fg}">${esc(o.order_status)}</span>
+       <select onchange="setSt(${o.id},this.value)" style="border:0;background:transparent;font-size:12px;padding:0;margin:0;width:16px;cursor:pointer;color:#94a3b8;outline:none">
+        ${ST.map(s=>`<option value="${s}" ${s==o.order_status?'selected':''}>${s}</option>`).join('')}
+       </select>
+      </div>
+     </td>
+     <td style="padding:14px 16px">
+      <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--text)"><span style="color:#94a3b8">📅</span>${dateStr}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px;padding-left:20px">${timeStr}</div>
+     </td>
+     <td style="padding:14px 16px">
+      <button onclick="toggleOrdDetails(${o.id})" style="background:#FCE7F3;color:#DB2777;border:0;padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px">👁 View</button>
+     </td>
+    </tr>
+    <tr id="ordDetailRow_${o.id}" style="display:none;background:#FAF5F8">
+     <td colspan="7" style="padding:16px 20px;border-bottom:1px solid #f1f5f9">
+      <div style="font-weight:700;font-size:14px;margin-bottom:8px;color:#50232B">Order #${1000+o.id} Details</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:13px;margin-bottom:12px">
+       <div>
+        <strong>📍 Delivery Address:</strong> ${esc(o.delivery_address)}<br>
+        <strong>💳 Payment Method:</strong> ${esc(o.payment_method)}
+       </div>
+       <div>
+        <strong>📦 Items Ordered:</strong><br>
+        ${items.map(x=>`• ${x.quantity}× ${esc(x.dname)} (${money(x.subtotal)})`).join('<br>')}
+       </div>
+      </div>
+      <div style="margin-top:8px">
+       <strong>Tracking Progress:</strong>
+       ${o.order_status==='Cancelled'?'<span class="tag" style="margin-left:8px">Cancelled</span>':`<div class="trk" style="margin-top:6px">${ST.slice(0,6).map((s,j)=>{const idx=ST.indexOf(o.order_status);return `<span class="${j<idx?'d':j==idx?'c':''}">${j<idx?'✓':j==idx?'●':'○'}<br>${s}</span>`;}).join('')}</div>`}
+      </div>
+     </td>
+    </tr>`;
+   }).join('')}
+  </tbody>
+ </table>`: `<div class="empty" style="padding:40px">📦<br>No orders found</div>`;
+
+ const tpl=getTemplate('tpl-orders');
+ if(tpl){
+  const div=document.createElement('div');
+  div.innerHTML=tpl;
+  const bind=(key,val)=>{const el=div.querySelector(`[data-bind="${key}"]`);if(el)el.textContent=val;};
+  bind('countTotal',countTotal);
+  bind('countPending',countPending);
+  bind('countConfirmed',countConfirmed);
+  bind('countPreparing',countPreparing);
+  bind('countReady',countReady);
+  bind('countCompleted',countCompleted);
+
+  const searchInput=div.querySelector('#ordersSearchInput');
+  if(searchInput){
+   searchInput.value=S.qs;
+   searchInput.onchange=e=>{S.qs=e.target.value;render();};
+   searchInput.onkeyup=e=>{if(e.key==='Enter'){S.qs=e.target.value;render();}};
+  }
+
+  const filterSelect=div.querySelector('#ordersStatusFilter');
+  if(filterSelect){
+   filterSelect.value=S.statusFilter;
+   filterSelect.onchange=e=>{S.statusFilter=e.target.value;render();};
+  }
+
+  const tableSlot=div.querySelector('#ordersTableSlot');
+  if(tableSlot)tableSlot.innerHTML=rowsHtml;
+  return div.innerHTML;
+ }
+ return `<h1>Orders</h1>${rowsHtml}`;
+}
+function toggleOrdDetails(id){const r=document.getElementById('ordDetailRow_'+id);if(r)r.style.display=r.style.display==='none'?'table-row':'none';}
 au(){
  const k='%'+S.qs+'%',us=q("SELECT u.*,(SELECT COUNT(*) FROM orders WHERE user_id=u.id) oc FROM users u WHERE role='customer' AND (name LIKE ? OR email LIKE ?)",[k,k]);
  return `<h1>Users</h1>${search('Search customers...')}${us.length?`<div style="overflow:auto"><table><tr><th>Name</th><th>Email</th><th>Orders</th><th>Status</th><th></th></tr>${us.map(u=>`<tr><td>${esc(u.name)}</td><td>${esc(u.email)}</td><td><a href="#" onclick="goq('ao','${esc(u.name).replace(/'/g,'')}');return false">${u.oc} view</a></td><td>${u.status}</td>
