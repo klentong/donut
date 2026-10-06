@@ -15,27 +15,69 @@ const hash=async s=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new 
 const pic=i=>i&&i.startsWith('data:image/')?`<img src="${i}">`:esc(i||'🍩');
 const lastId=()=>q('SELECT last_insert_rowid() id')[0].id;
 
-/* ---------- start / auth ---------- */
-function splash(){app.innerHTML=`<div class="splash"><div class="logo">🍩</div><h1>Donut Shop</h1><div class="bar"><i></i></div><p>Loading shop...</p></div>`}
+const DEFAULT_SQL=`PRAGMA foreign_keys=OFF;
+BEGIN TRANSACTION;
+CREATE TABLE categories(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE donuts(id INTEGER PRIMARY KEY AUTOINCREMENT,category_id INTEGER NOT NULL REFERENCES categories(id),name TEXT NOT NULL,description TEXT,price REAL NOT NULL,stock INTEGER NOT NULL DEFAULT 0,image TEXT,status TEXT NOT NULL DEFAULT 'available' CHECK(status IN('available','unavailable','archived')),created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE order_items(id INTEGER PRIMARY KEY AUTOINCREMENT,order_id INTEGER NOT NULL REFERENCES orders(id),donut_id INTEGER NOT NULL REFERENCES donuts(id),quantity INTEGER NOT NULL,price REAL NOT NULL,subtotal REAL NOT NULL);
+CREATE TABLE orders(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER NOT NULL REFERENCES users(id),total_amount REAL NOT NULL,payment_method TEXT,delivery_address TEXT,contact_number TEXT,order_status TEXT NOT NULL DEFAULT 'Pending',created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE users(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,email TEXT UNIQUE NOT NULL,password TEXT NOT NULL,phone TEXT,address TEXT,role TEXT NOT NULL DEFAULT 'customer' CHECK(role IN('customer','admin')),status TEXT NOT NULL DEFAULT 'active',created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+INSERT INTO "categories" ("id", "name") VALUES (1, 'Classic'), (2, 'Chocolate'), (3, 'Strawberry'), (4, 'Cream'), (5, 'Premium'), (6, 'Special');
+INSERT INTO "donuts" ("id", "category_id", "name", "description", "price", "stock", "image", "status") VALUES
+(1, 2, 'Chocolate Donut', 'Rich chocolate glaze', 45, 20, '🍫', 'available'),
+(2, 3, 'Strawberry Donut', 'Pink strawberry icing', 50, 15, '🍓', 'available'),
+(3, 1, 'Glazed Donut', 'Classic sugar glaze', 40, 30, '🍩', 'available'),
+(4, 6, 'Matcha Donut', 'Green tea glaze', 55, 12, '🍵', 'available'),
+(5, 4, 'Cookies & Cream', 'Crushed cookies on cream', 60, 14, '🍪', 'available'),
+(6, 4, 'Bavarian Cream', 'Custard-filled', 55, 16, '🥮', 'available'),
+(7, 5, 'Blueberry Donut', 'Blueberry filling', 58, 10, '🫐', 'available'),
+(8, 5, 'Caramel Donut', 'Salted caramel drizzle', 52, 18, '🍯', 'available');
+INSERT INTO "users" ("id", "name", "email", "password", "phone", "address", "role", "status") VALUES
+(1, 'Admin', 'admin@donutshop.com', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', '0000000', 'Shop', 'admin', 'active'),
+(2, 'klent', 'klent@gmail.com', 'b28530ace0e97741a826f5754acda3faa21f9c4fd788b03d43bd942988cf1a25', '09858622336', 'mandaue', 'customer', 'active');
+DELETE FROM sqlite_sequence;
+INSERT INTO sqlite_sequence (name, seq) VALUES ('users', 2), ('categories', 6), ('donuts', 8);
+COMMIT;
+PRAGMA foreign_keys=ON;`;
+
+function getApp(){return $('#app')||document.body}
+function splash(){const a=getApp();if(a)a.innerHTML=`<div class="splash"><div class="logo">🍩</div><h1>Donut Shop</h1><div class="bar"><i></i></div><p>Loading shop...</p></div>`}
 async function start(){
  splash();
  try{
   const SQL=await initSqlJs({locateFile:f=>CDN+f}),stored=await loadSaved();
-  if(stored)db=new SQL.Database(new Uint8Array(stored));
-  else{const response=await fetch('database.sql');if(!response.ok)throw new Error('Could not load database.sql');db=new SQL.Database();db.run(await response.text());await save()}
-  q('SELECT 1 FROM users LIMIT 1');authView()
- }catch(e){console.error(e);app.innerHTML=`<div class="splash"><div class="logo">🍩</div><h1>Could not start</h1><p>${esc(e.message||'Check that database.sql is available and reload.')}</p><button class="btn" onclick="start()">Retry</button></div>`}
+  if(stored){
+   db=new SQL.Database(new Uint8Array(stored));
+  }else{
+   let sqlText;
+   try{
+    const response=await fetch('database.sql');
+    if(response&&response.ok) sqlText=await response.text();
+   }catch(err){}
+   if(!sqlText) sqlText=DEFAULT_SQL;
+   db=new SQL.Database();
+   db.run(sqlText);
+   await save();
+  }
+  q('SELECT 1 FROM users LIMIT 1');
+  authView();
+ }catch(e){
+  console.error(e);
+  const a=getApp();
+  if(a)a.innerHTML=`<div class="splash"><div class="logo">🍩</div><h1>Could not start</h1><p>${esc(e.message||'Check database and reload.')}</p><button class="btn" onclick="start()">Retry</button></div>`;
+ }
 }
 function getTemplate(id){const t=document.getElementById(id);return t?t.innerHTML:null}
 function authView(reg){
  const tplId=reg?'tpl-register':'tpl-login';
  const html=getTemplate(tplId);
- if(html){app.innerHTML=html}
+ const el=getApp();
+ if(html){el.innerHTML=html}
  else{
   if(reg){
-   app.innerHTML=`<div class="auth-bg"><div class="auth-card register-card"><div class="auth-brand-mini"><span style="font-size:28px">🍩</span><span class="auth-brand-name">Sweet Donuts</span></div><h2 class="auth-title">Create Account</h2><p class="auth-sub">Join us and start ordering fresh donuts!</p><div class="auth-field"><span class="auth-icon">👤</span><input id="n" placeholder="Full name"></div><div class="auth-field"><span class="auth-icon">✉️</span><input id="e" type="email" placeholder="Email"></div><div class="auth-field"><span class="auth-icon">🔒</span><input id="p" type="password" placeholder="Password"></div><div class="auth-field"><span class="auth-icon">🔒</span><input id="p2" type="password" placeholder="Confirm password"></div><div class="auth-field"><span class="auth-icon">📱</span><input id="ph" placeholder="Phone"></div><div class="auth-field"><span class="auth-icon">📍</span><input id="ad" placeholder="Address"></div><button class="auth-btn-main" onclick="register()">Register →</button><div class="auth-or"><span>or</span></div><button class="auth-btn-outline" onclick="authView(false)">← Back to Login</button></div></div>`;
+   el.innerHTML=`<div class="auth-bg"><div class="auth-card register-card"><div class="auth-brand-mini"><span style="font-size:28px">🍩</span><span class="auth-brand-name">Sweet Donuts</span></div><h2 class="auth-title">Create Account</h2><p class="auth-sub">Join us and start ordering fresh donuts!</p><div class="auth-field"><span class="auth-icon">👤</span><input id="n" placeholder="Full name"></div><div class="auth-field"><span class="auth-icon">✉️</span><input id="e" type="email" placeholder="Email"></div><div class="auth-field"><span class="auth-icon">🔒</span><input id="p" type="password" placeholder="Password"></div><div class="auth-field"><span class="auth-icon">🔒</span><input id="p2" type="password" placeholder="Confirm password"></div><div class="auth-field"><span class="auth-icon">📱</span><input id="ph" placeholder="Phone"></div><div class="auth-field"><span class="auth-icon">📍</span><input id="ad" placeholder="Address"></div><button class="auth-btn-main" onclick="register()">Register →</button><div class="auth-or"><span>or</span></div><button class="auth-btn-outline" onclick="authView(false)">← Back to Login</button></div></div>`;
   }else{
-   app.innerHTML=`<div class="auth-bg"><div class="auth-card login-card"><div class="auth-left"><div class="auth-left-content"><div class="auth-donut-icon">🍩</div><h1 class="auth-brand-title">Sweet Donuts</h1><p class="auth-brand-sub">Freshly baked. Always a good idea.</p><div class="auth-big-donut">🍩</div></div></div><div class="auth-right"><h2 class="auth-title">Welcome back!</h2><p class="auth-sub">Log in to your Sweet Donuts account<br>and keep the orders going!</p><div class="auth-field"><span class="auth-icon">✉️</span><input id="e" type="email" placeholder="Email"></div><div class="auth-field"><span class="auth-icon">🔒</span><input id="p" type="password" placeholder="Password"><button class="auth-eye" onclick="togglePw()" id="eyeBtn">🙈</button></div><button class="auth-btn-main" onclick="login()">Login &nbsp;→</button><div class="auth-or"><span>or</span></div><button class="auth-btn-outline" onclick="authView(true)">👤+ &nbsp;Register</button></div></div></div>`;
+   el.innerHTML=`<div class="auth-bg"><div class="auth-card login-card"><div class="auth-left"><div class="auth-left-content"><div class="auth-donut-icon">🍩</div><h1 class="auth-brand-title">Sweet Donuts</h1><p class="auth-brand-sub">Freshly baked. Always a good idea.</p><div class="auth-big-donut">🍩</div></div></div><div class="auth-right"><h2 class="auth-title">Welcome back!</h2><p class="auth-sub">Log in to your Sweet Donuts account<br>and keep the orders going!</p><div class="auth-field"><span class="auth-icon">✉️</span><input id="e" type="email" placeholder="Email"></div><div class="auth-field"><span class="auth-icon">🔒</span><input id="p" type="password" placeholder="Password"><button class="auth-eye" onclick="togglePw()" id="eyeBtn">🙈</button></div><button class="auth-btn-main" onclick="login()">Login &nbsp;→</button><div class="auth-or"><span>or</span></div><button class="auth-btn-outline" onclick="authView(true)">👤+ &nbsp;Register</button></div></div></div>`;
   }
  }
 }
@@ -62,6 +104,7 @@ function render(){
  const a=user.role==='admin';
  if(ADMIN.includes(S.v)&&!a)S.v='menu';
  if(a&&!ADMIN.includes(S.v))S.v='dash';
+ const el=getApp();
  if(a){
   const tabs=[['dash','🏠','Dashboard'],['dd','🍩','Donuts'],['ao','📦','Orders'],['au','👥','Users']];
   const navHtml=tabs.map(t=>`<button class="${S.v===t[0]?'on':''}" onclick="go('${t[0]}');closeSidebar()"><span class="nav-icon">${t[1]}</span>${t[2]}</button>`).join('');
@@ -71,14 +114,14 @@ function render(){
    div.innerHTML=shellTpl;
    const navSlot=div.querySelector('#admNavSlots');if(navSlot)navSlot.innerHTML=navHtml;
    const contentSlot=div.querySelector('#admContentSlot');if(contentSlot)contentSlot.innerHTML=V[S.v]();
-   app.innerHTML=div.innerHTML;
+   el.innerHTML=div.innerHTML;
   }else{
-   app.innerHTML=`<button class="adm-menu-btn" onclick="toggleSidebar()">☰</button><div class="adm-overlay" id="admOverlay" onclick="closeSidebar()"></div><div class="adm-shell"><aside class="adm-sidebar" id="admSidebar"><div class="brand"><span class="brand-icon">🍩</span><span class="brand-name">Donuts</span></div><nav class="adm-nav">${navHtml}</nav><div class="sidebar-footer"><div class="donut-deco">🍩</div><p>Sweet moments<br>make a better day!</p><button class="btn logout-btn" onclick="logout()" style="margin-top:12px;width:100%;justify-content:center">⏏ Logout</button></div></aside><div class="adm-content">${V[S.v]()}</div></div>`;
+   el.innerHTML=`<button class="adm-menu-btn" onclick="toggleSidebar()">☰</button><div class="adm-overlay" id="admOverlay" onclick="closeSidebar()"></div><div class="adm-shell"><aside class="adm-sidebar" id="admSidebar"><div class="brand"><span class="brand-icon">🍩</span><span class="brand-name">Donuts</span></div><nav class="adm-nav">${navHtml}</nav><div class="sidebar-footer"><div class="donut-deco">🍩</div><p>Sweet moments<br>make a better day!</p><button class="btn logout-btn" onclick="logout()" style="margin-top:12px;width:100%;justify-content:center">⏏ Logout</button></div></aside><div class="adm-content">${V[S.v]()}</div></div>`;
   }
   if(S.v==='dash')setTimeout(initChart,50);
  } else {
   const tabs=[['menu','🏠','Menu'],['cart','🛒','Cart'+(cart.length?` (${cart.length})`:'')],['orders','🧾','Orders'],['me','👤','Profile']];
-  app.innerHTML=`<div class="customer-wrap">${V[S.v]()}</div><nav class="bottom-nav">${tabs.map(t=>`<button class="${S.v===t[0]?'on':''}" onclick="go('${t[0]}')">${t[1]}<small>${t[2]}</small></button>`).join('')}</nav>`;
+  el.innerHTML=`<div class="customer-wrap">${V[S.v]()}</div><nav class="bottom-nav">${tabs.map(t=>`<button class="${S.v===t[0]?'on':''}" onclick="go('${t[0]}')">${t[1]}<small>${t[2]}</small></button>`).join('')}</nav>`;
  }
 }
 function toggleSidebar(){document.getElementById('admSidebar').classList.toggle('open');document.getElementById('admOverlay').classList.toggle('open')}
@@ -406,13 +449,13 @@ ao(){
   return div.innerHTML;
  }
  return `<h1>Orders</h1>${rowsHtml}`;
-}
-function toggleOrdDetails(id){const r=document.getElementById('ordDetailRow_'+id);if(r)r.style.display=r.style.display==='none'?'table-row':'none';}
+},
 au(){
  const k='%'+S.qs+'%',us=q("SELECT u.*,(SELECT COUNT(*) FROM orders WHERE user_id=u.id) oc FROM users u WHERE role='customer' AND (name LIKE ? OR email LIKE ?)",[k,k]);
  return `<h1>Users</h1>${search('Search customers...')}${us.length?`<div style="overflow:auto"><table><tr><th>Name</th><th>Email</th><th>Orders</th><th>Status</th><th></th></tr>${us.map(u=>`<tr><td>${esc(u.name)}</td><td>${esc(u.email)}</td><td><a href="#" onclick="goq('ao','${esc(u.name).replace(/'/g,'')}');return false">${u.oc} view</a></td><td>${u.status}</td>
  <td><button class="chip" onclick="toggleU(${u.id})">${u.status=='active'?'Deactivate':'Activate'}</button></td></tr>`).join('')}</table></div>`:empty('No customers')}`}
 };
+function toggleOrdDetails(id){const r=document.getElementById('ordDetailRow_'+id);if(r)r.style.display=r.style.display==='none'?'table-row':'none';}
 
 /* ---------- shared order card ---------- */
 function ordCard(o,adm){
