@@ -26,11 +26,62 @@ async function start(){
   q('SELECT 1 FROM users LIMIT 1');authView()
  }catch(e){console.error(e);app.innerHTML=`<div class="splash"><div class="logo">🍩</div><h1>Could not start</h1><p>${esc(e.message||'Check that database.sql is available and reload.')}</p><button class="btn" onclick="start()">Retry</button></div>`}
 }
-function authView(reg){app.innerHTML=`<div class="auth"><div class="logo">🍩</div><h1>${reg?'Create account':'Welcome back'}</h1>
-${reg?'<input id="n" placeholder="Full name">':''}<input id="e" type="email" placeholder="Email"><input id="p" type="password" placeholder="Password">
-${reg?'<input id="p2" type="password" placeholder="Confirm password"><input id="ph" placeholder="Phone"><input id="ad" placeholder="Address">':''}
-<button class="btn" onclick="${reg?'register()':'login()'}">${reg?'Register':'Login'}</button><br><br>
-<button class="btn ghost" onclick="authView(${!reg})">${reg?'Back to login':'Register'}</button></div>`}
+function authView(reg){
+ if(reg){
+  app.innerHTML=`<div class="auth-bg">
+   <div class="auth-card register-card">
+    <div class="auth-brand-mini"><span style="font-size:28px">🍩</span><span class="auth-brand-name">Sweet Donuts</span></div>
+    <h2 class="auth-title">Create Account</h2>
+    <p class="auth-sub">Join us and start ordering fresh donuts!</p>
+    <div class="auth-field"><span class="auth-icon">👤</span><input id="n" placeholder="Full name"></div>
+    <div class="auth-field"><span class="auth-icon">✉️</span><input id="e" type="email" placeholder="Email"></div>
+    <div class="auth-field"><span class="auth-icon">🔒</span><input id="p" type="password" placeholder="Password"></div>
+    <div class="auth-field"><span class="auth-icon">🔒</span><input id="p2" type="password" placeholder="Confirm password"></div>
+    <div class="auth-field"><span class="auth-icon">📱</span><input id="ph" placeholder="Phone"></div>
+    <div class="auth-field"><span class="auth-icon">📍</span><input id="ad" placeholder="Address"></div>
+    <button class="auth-btn-main" onclick="register()">Register →</button>
+    <div class="auth-or"><span>or</span></div>
+    <button class="auth-btn-outline" onclick="authView(false)">← Back to Login</button>
+   </div>
+  </div>`;
+ } else {
+  app.innerHTML=`<div class="auth-bg">
+   <div class="auth-card login-card">
+    <div class="auth-left">
+     <div class="auth-left-content">
+      <div class="auth-donut-icon">🍩</div>
+      <h1 class="auth-brand-title">Sweet Donuts</h1>
+      <p class="auth-brand-sub">Freshly baked. Always a good idea.</p>
+      <div class="auth-big-donut">🍩</div>
+      <div class="auth-sprinkles">
+       <span style="top:18%;left:12%;transform:rotate(30deg)">🍬</span>
+       <span style="top:22%;right:14%;transform:rotate(-20deg)">🍭</span>
+       <span style="bottom:28%;left:8%;transform:rotate(60deg)">🍬</span>
+       <span style="bottom:22%;right:10%;transform:rotate(-45deg)">🍭</span>
+      </div>
+     </div>
+    </div>
+    <div class="auth-right">
+     <h2 class="auth-title">Welcome back!</h2>
+     <p class="auth-sub">Log in to your Sweet Donuts account<br>and keep the orders going!</p>
+     <div class="auth-field">
+      <span class="auth-icon">✉️</span>
+      <input id="e" type="email" placeholder="Email" onkeydown="if(event.key==='Enter')login()">
+     </div>
+     <div class="auth-field">
+      <span class="auth-icon">🔒</span>
+      <input id="p" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')login()">
+      <button class="auth-eye" onclick="togglePw()" id="eyeBtn" title="Show/hide">🙈</button>
+     </div>
+     <button class="auth-btn-main" onclick="login()">Login &nbsp;→</button>
+     <div class="auth-or"><span>or</span></div>
+     <button class="auth-btn-outline" onclick="authView(true)">👤+ &nbsp;Register</button>
+    </div>
+   </div>
+  </div>`;
+ }
+}
+function togglePw(){const p=$('#p'),b=$('#eyeBtn');if(!p)return;if(p.type==='password'){p.type='text';b.textContent='👁️'}else{p.type='password';b.textContent='🙈'}}
 async function login(){
  const r=q('SELECT * FROM users WHERE email=? AND password=?',[$('#e').value.trim().toLowerCase(),await hash($('#p').value)])[0];
  if(!r)return toast('Invalid email or password',1);
